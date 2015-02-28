@@ -4,8 +4,12 @@ var time = 0
 var best_score=0
 var rockets 
 var score
+var survival_score = 0
+var survival_best_score = 0
 var status = "menu"
 var old_level = "level1"
+var game_mode = "start"
+var save_status = false
 
 # For score saving
 var level1 = [0,0]
@@ -32,7 +36,12 @@ func _ready():
 	get_node("../gui/level_complete/restart_btn").connect("pressed",self,"_on_restart_pressed")
 	get_node("../gui/level_complete/menu_btn").connect("pressed",self,"_on_menu_pressed")
 	get_node("../gui/level_complete/next_btn").connect("pressed",self,"_on_next_pressed")
-	get_node("../gui/game_start/start_btn").connect("pressed",self,"_on_menu_pressed")
+	get_node("../gui/game_start/start_btn").connect("pressed",self,"_on_start_pressed")
+	get_node("../gui/menu/normal_game").connect("pressed",self,"level_select")
+	get_node("../gui/menu/survival_game").connect("pressed",self,"survival_start")
+	get_node("../gui/menu/resume").connect("pressed",self,"_on_resume_pressed")
+	get_node("../gui/level_selector/back").connect("pressed",self,"_on_menu_pressed")
+	
 	
 func _process(delta):
 	if(get_node("../spawner").level_status == false && get_node("../player").health > 0):
@@ -44,23 +53,37 @@ func _process(delta):
 func game_over():
 	status = "menu"
 	get_node("timer").stop()
-	score = time + (get_node("../player").health * 50)
-	if( best_score < score):
-		best_score = score
+	score = time + (get_node("../player").health * 50) + get_node("../player").bonus_score
+	survival_score = (time + get_node("../player").bonus_score) * 10
+
+	if(game_mode == "survival"):
+		if(survival_best_score < survival_score):
+			survival_best_score = survival_score
+		if(save_status == false):
+			save_stats()
+			save_status = true
+		get_node("../gui/game_over/best_score").set_text(str(survival_best_score))
+		get_node("../gui/game_over/score").set_text(str(survival_score))
+	elif(game_mode == "normal"):
+		if(best_score < score):
+			best_score = score
+		get_node("../gui/game_over/best_score").set_text(str(best_score))
+		get_node("../gui/game_over/score").set_text(str(score))
 	get_node("../player/anim").play("death")
 	get_node("../spawner/anim").stop()
+	get_node("../spawner/survival").stop()
 	get_node("../gui/game_over").show()
 	get_tree().call_group(0, "in_game_gui", "hide")
-	get_node("../gui/game_over/best_score").set_text(str(best_score))
-	get_node("../gui/game_over/score").set_text(str(score))
-	
+
 func game_start(level):
 	status = "play"
+	game_mode = "normal"
 	best_score = get_level_score(level)[1]
 	rockets = get_level_score(level)[0]
 	time = 0
 	score = 0
 	old_level = level
+	save_status = true
 	get_tree().set_pause(false)
 	get_node("../gui/level_selector").hide()
 	get_node("../gui/help").hide()
@@ -68,6 +91,7 @@ func game_start(level):
 	destroy_old_level()
 	get_node("timer").start()
 	get_node("../gui/level_complete").hide()
+	get_node("../gui/menu").hide()
 	get_node("../gui/game_over").hide()
 	get_node("../gui/menu_btn").show()
 	get_node("../gui/life").show()
@@ -78,6 +102,33 @@ func game_start(level):
 	get_node("../player").direction = 1
 	get_node("../player").show()
 	get_node("../player/anim").play("idle")
+	get_node("../gui/game_over/next_btn").set_modulate(Color(1,1,1,1))
+
+func survival_start():
+	status = "play"
+	game_mode = "survival"
+	time = 0
+	survival_score = 0
+	save_status = true
+	get_tree().set_pause(false)
+	get_node("../gui/level_selector").hide()
+	get_node("../gui/help").hide()
+	get_tree().call_group(0, "in_game_gui", "show")
+	destroy_old_level()
+	get_node("timer").start()
+	get_node("../gui/level_complete").hide()
+	get_node("../gui/menu").hide()
+	get_node("../gui/game_over").hide()
+	get_node("../gui/menu_btn").show()
+	get_node("../gui/life").show()
+	get_node("../spawner/survival").play("survival")
+	get_node("../player").set_pos(Vector2(50,142))
+	get_node("../player").health = 3
+	get_node("../player").speed = 40
+	get_node("../player").direction = 1
+	get_node("../player").show()
+	get_node("../player/anim").play("idle")
+	get_node("../gui/game_over/next_btn").set_modulate(Color(0,0,0,0.33))
 
 func level_complete():
 	status = "menu"
@@ -97,17 +148,22 @@ func level_complete():
 
 func level_select():
 	get_tree().call_group(0, "in_game_gui", "hide")
+	get_node("../gui/menu").hide()
 	get_tree().set_pause(true)
 	get_node("../gui/level_selector").show()
 
 func show_menu():
 	get_tree().call_group(0, "in_game_gui", "hide")
 	get_tree().call_group(0, "menu_gui", "hide")
+	get_node("../gui/level_selector").hide()
 	get_tree().set_pause(true)
-	get_node("../gui/level_selector").show()
+	get_node("../gui/menu").show()
+	get_node("../gui/menu/resume").show()
 
 func destroy_old_level():
 	get_node("../gui/help").hide()
+	get_node("../spawner/anim").stop()
+	get_node("../spawner/survival").stop()
 	get_tree().call_group(0, "enemies", "queue_free")
 	get_tree().call_group(0, "powerups", "queue_free")
 
@@ -115,14 +171,27 @@ func _on_menu_pressed():
 	show_menu()
 
 func _on_restart_pressed():
-	game_start(old_level)
+	if(game_mode == "normal"):
+		game_start(old_level)
+	if(game_mode == "survival"):
+		survival_start()
 
 func _on_start_pressed():
-	get_node("../gui/game_start").hide()
-	level_select()
+	show_menu()
+	get_node("../gui/menu/resume").hide()
+	#level_select()
 
 func _on_next_pressed():
-	game_start(get_next_level(old_level))
+	if(game_mode == "normal"):
+		game_start(get_next_level(old_level))
+
+func _on_resume_pressed():
+	if(get_node("../player").health > 0):
+		get_tree().call_group(0, "in_game_gui", "show")
+	if(get_node("../player").health < 0):
+		get_tree().call_group(0, "menu_gui", "show")
+	get_node("../gui/menu").hide()
+	get_tree().set_pause(false)
 
 func _on_timer_timeout():
 	time +=1
@@ -196,6 +265,7 @@ func save_stats():
 		file.store_var(level7)
 		file.store_var(level8)
 		file.store_var(level9)
+		file.store_var(survival_best_score)
 		file.close()
 	else:
 		print("Can't open " + str(save_file))
@@ -213,6 +283,7 @@ func load_stats():
 		level7 = file.get_var()
 		level8 = file.get_var()
 		level9 = file.get_var()
+		survival_best_score = file.get_var()
 		file.close()
 	else:
 		print("Can't open " + str(save_file))

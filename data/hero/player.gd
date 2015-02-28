@@ -45,9 +45,9 @@ func _process(deltatime):
 	var things = body.get_overlapping_bodies()
 	if (things.size() != 0):
 		for thing in things:
-			if (thing.is_in_group("powerups") && thing.is_destroyed == false):
+			if (thing.is_in_group("powerups") && thing.is_destroyed == false && health > 0):
 				if (thing.type == "health"):
-					bonus_score -= 20
+					bonus_score += 20
 					thing.blast()
 					if(health < 3):
 						health += 1
@@ -61,7 +61,8 @@ func _process(deltatime):
 					get_node("reverse").play("reverse")
 			if (thing.is_in_group("enemies") && thing.is_destroyed == false):
 				thing.blast()
-				health -= 1
+				if (health > 0):
+					health -= 1
 				if (anim_state == "idle"):
 					anim.play("hit")
 
