@@ -102,7 +102,8 @@ func game_start(level):
 	get_node("../player").direction = 1
 	get_node("../player").show()
 	get_node("../player/anim").play("idle")
-	get_node("../gui/game_over/next_btn").set_modulate(Color(1,1,1,1))
+	#get_node("../gui/game_over/next_btn").set_modulate(Color(1,1,1,1))
+	get_node("../gui/game_over/next_btn").show()
 
 func survival_start():
 	status = "play"
@@ -128,7 +129,8 @@ func survival_start():
 	get_node("../player").direction = 1
 	get_node("../player").show()
 	get_node("../player/anim").play("idle")
-	get_node("../gui/game_over/next_btn").set_modulate(Color(0,0,0,0.33))
+	#get_node("../gui/game_over/next_btn").set_modulate(Color(0,0,0,0.33))
+	get_node("../gui/game_over/next_btn").hide()
 
 func level_complete():
 	status = "menu"
