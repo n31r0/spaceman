@@ -22,7 +22,7 @@ var level7 = [0,0]
 var level8 = [0,0]
 var level9 = [0,0]
 
-var save_file = "res://save.dat"
+var save_file = "user://save.dat"
 #var save_settings = "usr://spaceman_settings.dat"
 
 func _ready():
@@ -110,6 +110,7 @@ func survival_start():
 	game_mode = "survival"
 	time = 0
 	survival_score = 0
+	get_node("../player").bonus_score = 0
 	save_status = true
 	get_tree().set_pause(false)
 	get_node("../gui/level_selector").hide()
