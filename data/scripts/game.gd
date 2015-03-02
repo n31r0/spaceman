@@ -161,7 +161,8 @@ func show_menu():
 	get_node("../gui/level_selector").hide()
 	get_tree().set_pause(true)
 	get_node("../gui/menu").show()
-	get_node("../gui/menu/resume").show()
+	if (game_mode != "start"):
+		get_node("../gui/menu/resume").show()
 
 func destroy_old_level():
 	get_node("../gui/help").hide()
