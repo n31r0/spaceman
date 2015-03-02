@@ -51,10 +51,15 @@ func high_score(h_score,m_score,l_score):
 
 func survival(num):
 	var i = 0
-	get_node("survival").set_speed(rand_range(1,3))
+	if(get_node("../game").time < 50):
+		get_node("survival").set_speed(rand_range(1,2))
+	elif(get_node("../game").time < 100):
+		get_node("survival").set_speed(rand_range(1.5,4))
+	elif(get_node("../game").time < 150):
+		get_node("survival").set_speed(rand_range(2,6))
 	if(rand_pos == 8):
 		rand_pos = int(rand_range(0,10))
-		orb(orb_type[rand_orb], pos_x[rand_pos], 50+get_node("../game").time)
+		orb(orb_type[rand_orb], pos_x[rand_pos], 50+get_node("../game").time/2)
 	else:
 		while(i<rand_pos):
 			rand_pos = int(rand_range(0,10))
